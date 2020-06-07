@@ -7,6 +7,8 @@ import re
 import numpy as np
 import time
 import requests
+import os
+import sys
 
 error_list = []
 series_code = "TV"
@@ -117,7 +119,11 @@ class FilmSpider (scrapy.Spider):
                
         
 
-
+class RateSpider (scrapy.Spider):
+    name = 'rates'
+    main_domain = 'https://www.imdb.com'
+    with open("ratings.txt", "rt") as f:
+        start_urls = [url.strip() for url in f.readlines()]
     def parserate(self, response):
 
         items = Rating_page() 
