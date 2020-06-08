@@ -119,166 +119,76 @@ class FilmSpider (scrapy.Spider):
                
         
 
-class RateSpider (scrapy.Spider):
-    name = 'rates'
-    main_domain = 'https://www.imdb.com'
-    with open("ratings.txt", "rt") as f:
-        start_urls = [url.strip() for url in f.readlines()]
-    def parserate(self, response):
-
-        items = Rating_page() 
-        header = response.css('h3')[0]
-        movie_name = header.css('a::text').extract()
-        chart_ratings = [[0 for x in range(3)] for y in range(10)]
-        detailed_ratings = [[0 for x in range(6)] for y in range(4)]
-        top_us_nonus = [[0 for x in range(3)] for y in range(2)]
-
-        j = 0
-        for i in range(9,0,-1):
-            chart_ratings[j][0] = i+1
-            j+= 1
-        chart_ratings[9][0] = 1
-
-        detailed_ratings[0][0] = '-'
-        detailed_ratings[0][1] = 'All ages'
-        detailed_ratings[0][2] = '<18'
-        detailed_ratings[0][3] = '18-29'
-        detailed_ratings[0][4] = '30-44'
-        detailed_ratings[0][5] = '45+'
-        detailed_ratings[1][0] = 'All:'
-        detailed_ratings[2][0] = 'Males:'
-        detailed_ratings[3][0] = 'Females:'
-
-        top_us_nonus[0][0] = 'Top 1000 Voters'
-        top_us_nonus[0][1] = 'US users'
-        top_us_nonus[0][2] = 'Non-US users'
-
-        soup = BeautifulSoup(response.body, 'html5lib')
-        containers = soup.findAll('table')
-
-        charts = containers[0]
-        weights = charts.findAll(
-            'div', attrs={'class': 'topAligned'})
-        volumes = charts.findAll(
-            'div', attrs={'class': 'leftAligned'})
-        volumes = volumes[1:]
-        j = 0
-        for i in range(len(weights)):
-            chart_ratings[j][1] = weights[i].text.strip()
-            chart_ratings[j][2] = volumes[i].text
-            j+= 1
-        
-        demographic = containers[1]
-        noexist_points_indexes = []
-        all_dems_big_cell = demographic.findAll(
-            'div', attrs={'class': 'bigcell'})
-        for i in range(len(all_dems_big_cell)):
-            if (all_dems_big_cell[i].text == '-'):
-                noexist_points_indexes.append(i)
-        all_dems_small_cell = demographic.findAll(
-            'div', attrs={'class': 'smallcell'})
-        for i in range(len(noexist_points_indexes)):
-            all_dems_small_cell.insert(noexist_points_indexes[i], '-')
-        row_number = 1
-        for i in range(len(all_dems_big_cell)):
-            
-            point = all_dems_big_cell[i].text
-            if(all_dems_small_cell[i] == '-'):
-                point_volume = '-'
-            else:
-                point_volume = all_dems_small_cell[i].text.strip()
-            if (row_number == 4):
-                break
-            j = ((i+1)%6 + row_number-1) % 6
-            detailed_ratings[row_number][j] = point + '/' + point_volume
-            if (i == 4) or (i == 9):
-                row_number += 1
-
-        extra_details = containers[2]
-        extra_big_cell = extra_details.findAll(
-            'div', attrs={'class': 'bigcell'})
-        extra_small_cell = extra_details.findAll(
-            'div', attrs={'class': 'smallcell'})
-        for i in range(len(extra_big_cell)):
-            point = extra_big_cell[i].text
-            point_volume = extra_small_cell[i].text.strip()
-            top_us_nonus[1][i] = point + '/' + point_volume
-
-        items['name'] = movie_name[0]
-        items['chart'] = chart_ratings
-        items['detail'] = detailed_ratings
-        items['extra'] = top_us_nonus
-
-        yield items
 
 
-    def parserev(self, response):
 
-        header = response.css('h3')[0]
-        movie_name = header.css('a::text').extract()
+    # def parserev(self, response):
 
-        def convert_to_int(st):
-            if(len(st) <= 3):
-                return(int(st))
-            else:
-                ind = st.find(',')
-                new_st = st[0:ind] + st[ind+1:]
-                return(int(new_st))
+    #     header = response.css('h3')[0]
+    #     movie_name = header.css('a::text').extract()
 
-        driver = webdriver.Firefox()
-        driver.get(response.url)
-        while True:
-            try:
-                loadmore = driver.find_element_by_id("load-more-trigger")
-                time.sleep(1)
-                loadmore.click()
-                time.sleep(0.5)
-            except Exception as e:
-                break
+    #     def convert_to_int(st):
+    #         if(len(st) <= 3):
+    #             return(int(st))
+    #         else:
+    #             ind = st.find(',')
+    #             new_st = st[0:ind] + st[ind+1:]
+    #             return(int(new_st))
 
-        NoneType = type(None)
-        ratings = []
-        user_names = []
-        dates = []
-        helpful_info = []
+    #     driver = webdriver.Firefox()
+    #     driver.get(response.url)
+    #     while True:
+    #         try:
+    #             loadmore = driver.find_element_by_id("load-more-trigger")
+    #             time.sleep(1)
+    #             loadmore.click()
+    #             time.sleep(0.5)
+    #         except Exception as e:
+    #             break
 
-        soup = BeautifulSoup(driver.page_source, 'html5lib')
-        items = Review_page()
+    #     NoneType = type(None)
+    #     ratings = []
+    #     user_names = []
+    #     dates = []
+    #     helpful_info = []
 
-        review_container = soup.findAll(
-            'div', attrs={'class': 'lister-item-content'})
-        for review in review_container:
-            rating_container = review.find(
-                'span', attrs={'class': 'rating-other-user-rating'})
-            name_date_container = review.find(
-                'div', attrs={'class': 'display-name-date'})
-            helpful_container = review.find('div', attrs={'class': 'content'})
-            for h in helpful_container.findAll('div', attrs={'class': 'text-muted'}):
-                pretty_text = h.text.strip()
-                first_line = pretty_text.partition('\n')[0].split()
-                if(convert_to_int(first_line[3]) == 0):
-                    helpful_info.append("-")
-                    continue
-                else:
-                    helpful_info.append(
-                        str(int(convert_to_int(first_line[0])/convert_to_int(first_line[3]) * 100)) + "%")
-            for name in name_date_container.findAll('a'):
-                raw_name = name.text
-                cleaned_name = raw_name.replace('.', '_')
-                user_names.append(cleaned_name)
-            for date in name_date_container.findAll('span', attrs={'class': 'review-date'}):
-                dates.append(date.text)
-            if(type(rating_container) == NoneType):
-                ratings.append("-")
-                continue
-            for r in rating_container.findAll('span'):
-                if(int(r.text) >= 0 and int(r.text) <= 10):
-                    ratings.append(int(r.text))
-                    break
+    #     soup = BeautifulSoup(driver.page_source, 'html5lib')
+    #     items = Review_page()
 
-        driver.quit()
+    #     review_container = soup.findAll(
+    #         'div', attrs={'class': 'lister-item-content'})
+    #     for review in review_container:
+    #         rating_container = review.find(
+    #             'span', attrs={'class': 'rating-other-user-rating'})
+    #         name_date_container = review.find(
+    #             'div', attrs={'class': 'display-name-date'})
+    #         helpful_container = review.find('div', attrs={'class': 'content'})
+    #         for h in helpful_container.findAll('div', attrs={'class': 'text-muted'}):
+    #             pretty_text = h.text.strip()
+    #             first_line = pretty_text.partition('\n')[0].split()
+    #             if(convert_to_int(first_line[3]) == 0):
+    #                 helpful_info.append("-")
+    #                 continue
+    #             else:
+    #                 helpful_info.append(
+    #                     str(int(convert_to_int(first_line[0])/convert_to_int(first_line[3]) * 100)) + "%")
+    #         for name in name_date_container.findAll('a'):
+    #             raw_name = name.text
+    #             cleaned_name = raw_name.replace('.', '_')
+    #             user_names.append(cleaned_name)
+    #         for date in name_date_container.findAll('span', attrs={'class': 'review-date'}):
+    #             dates.append(date.text)
+    #         if(type(rating_container) == NoneType):
+    #             ratings.append("-")
+    #             continue
+    #         for r in rating_container.findAll('span'):
+    #             if(int(r.text) >= 0 and int(r.text) <= 10):
+    #                 ratings.append(int(r.text))
+    #                 break
 
-        revs = dict(zip(user_names, zip(ratings, helpful_info, dates)))
-        items['data'] = revs
-        items['name'] = movie_name[0]
-        yield items
+    #     driver.quit()
+
+    #     revs = dict(zip(user_names, zip(ratings, helpful_info, dates)))
+    #     items['data'] = revs
+    #     items['name'] = movie_name[0]
+    #     yield items
