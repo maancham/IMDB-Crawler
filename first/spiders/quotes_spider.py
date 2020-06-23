@@ -38,17 +38,26 @@ class FilmSpider (scrapy.Spider):
         date = date_container.css('a::text')[-1].extract()
         if (first_field_check(not_ready, date)):
             header = response.css('h1::text').extract_first()
+
             rating_container = response.css('div.ratingValue')
             rating = rating_container.css('span::text')[0].extract()
             rating_volume = response.css('span.small::text').extract_first()
-            genres_container = response.css('div.subtext')
-            genres = genres_container.css('a::text').extract()
+            # genres_container = response.css('div.subtext')
+            # genres = genres_container.css('a::text').extract()
+
+            full_genres_container = response.xpath("//div[@class='see-more inline canwrap']")[1]
+            full_genres_list = full_genres_container.css('a::text').extract()
+            full_genres_list = [s[1:] for s in full_genres_list]
+
             director_writer = response.css('div.credit_summary_item')
             director = director_writer.css('a::text')[0].extract()
             writer = director_writer.css('a::text')[1].extract()
+
             metascore = response.xpath(
                 "//div[@class='metacriticScore score_favorable titleReviewBarSubItem']//text()").extract()
+
             article = response.xpath('//div[@id="titleDetails"]')
+
 
             money = ""
             gross = ""
@@ -80,7 +89,7 @@ class FilmSpider (scrapy.Spider):
             items['point_volume'] = rating_volume
             items['metascore'] = int(metascore[1])
             items['date'] = date[:-1]
-            items['genres'] = genres[:-1]
+            items['genres'] = full_genres_list
             items['director'] = director
             items['writer'] = writer
             items['cast'] = casts
