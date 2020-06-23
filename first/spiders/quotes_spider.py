@@ -19,13 +19,12 @@ def first_field_check(not_ready, date):
         return False
     return True
 
+      
 
 class FilmSpider (scrapy.Spider):
     name = 'films'
-    main_domain = 'https://www.imdb.com'
-    start_urls = [
-        'https://www.imdb.com/title/tt0451279'
-    ]
+    with open(r"C:\Users\hoomo\Desktop\bahrak_data\scrapy\first\first\address.txt", "rt") as f:
+        start_urls = [url.strip() for url in f.readlines()]
 
     a = 'tt0451279'
     def parse(self, response):
@@ -103,17 +102,17 @@ class FilmSpider (scrapy.Spider):
             if ((items['budget'] == "")):
                 yield None
 
-            # rating_detail_ext = 'ratings'
-            # review_cont = response.xpath('//div[@id="titleUserReviewsTeaser"]')
-            # comment_tag = review_cont.xpath("//div[@class='user-comments']")
-            # rating_page = response.url + rating_detail_ext
-            # if (len(comment_tag) != 0):            
-            #     review_page = response.css('div.user-comments a::attr(href)')[-1].get()
-            # else:
-            #     review_page = None
+            rating_detail_ext = 'ratings'
+            review_cont = response.xpath('//div[@id="titleUserReviewsTeaser"]')
+            comment_tag = review_cont.xpath("//div[@class='user-comments']")
+            rating_page = response.url + rating_detail_ext
+            if (len(comment_tag) != 0):            
+                review_page = response.css('div.user-comments a::attr(href)')[-1].get()
+            else:
+                review_page = None
             
-            # if not(rating_page is None):
-            #     rating_file.write(rating_page + '\n')
+            if not(rating_page is None):
+                rating_file.write(rating_page + '\n')
 
 
             # if not(rating_page is None):
