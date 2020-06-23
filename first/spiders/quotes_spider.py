@@ -61,6 +61,7 @@ class FilmSpider (scrapy.Spider):
 
             money = ""
             gross = ""
+            runtime = ""
             for block in article.css('div.txt-block'):
                 block_content = block.extract()
                 if ("Budget" in block_content):
@@ -68,6 +69,8 @@ class FilmSpider (scrapy.Spider):
                 elif ("Worldwide" in block_content):
                     gross = block_content.splitlines()[1]
                     gross = gross.replace('</div>', '').replace(' ', '')
+                elif("Runtime" in block_content):
+                    runtime = block.css('time::text').extract_first()
             
             casts_container = response.css('table.cast_list')
             odd_casts = casts_container.css('tr.odd')
@@ -95,6 +98,7 @@ class FilmSpider (scrapy.Spider):
             items['cast'] = casts
             items['budget'] = money[43:]
             items['gross'] = gross[48:]
+            items['runtime'] = runtime
 
             if ((items['budget'] == "")):
                 yield None

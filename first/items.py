@@ -22,6 +22,7 @@ class Main_page(scrapy.Item):
     users = scrapy.Field()
     genres = scrapy.Field()
     gross = scrapy.Field()
+    runtime = scrapy.Field()
     # pass
 
 
