@@ -46,6 +46,8 @@ class FilmSpider (scrapy.Spider):
             director_writer = response.css('div.credit_summary_item')
             director = director_writer.css('a::text')[0].extract()
             writer = director_writer.css('a::text')[1].extract()
+            metascore = response.xpath(
+                "//div[@class='metacriticScore score_favorable titleReviewBarSubItem']//text()").extract()
             article = response.xpath('//div[@id="titleDetails"]')
 
             money = ""
@@ -76,6 +78,7 @@ class FilmSpider (scrapy.Spider):
             items['name'] = header[0:-1]
             items['point'] = rating
             items['point_volume'] = rating_volume
+            items['metascore'] = int(metascore[1])
             items['date'] = date[:-1]
             items['genres'] = genres[:-1]
             items['director'] = director
@@ -87,17 +90,17 @@ class FilmSpider (scrapy.Spider):
             if ((items['budget'] == "")):
                 yield None
 
-            rating_detail_ext = 'ratings'
-            review_cont = response.xpath('//div[@id="titleUserReviewsTeaser"]')
-            comment_tag = review_cont.xpath("//div[@class='user-comments']")
-            rating_page = response.url + rating_detail_ext
-            if (len(comment_tag) != 0):            
-                review_page = response.css('div.user-comments a::attr(href)')[-1].get()
-            else:
-                review_page = None
+            # rating_detail_ext = 'ratings'
+            # review_cont = response.xpath('//div[@id="titleUserReviewsTeaser"]')
+            # comment_tag = review_cont.xpath("//div[@class='user-comments']")
+            # rating_page = response.url + rating_detail_ext
+            # if (len(comment_tag) != 0):            
+            #     review_page = response.css('div.user-comments a::attr(href)')[-1].get()
+            # else:
+            #     review_page = None
             
-            if not(rating_page is None):
-                rating_file.write(rating_page + '\n')
+            # if not(rating_page is None):
+            #     rating_file.write(rating_page + '\n')
 
 
             # if not(rating_page is None):
@@ -110,10 +113,10 @@ class FilmSpider (scrapy.Spider):
             yield items
 
 
-            next_pages = response.css('div.rec_item a::attr(href)').getall()
-            if next_pages is not None:
-                for page in next_pages:
-                    yield response.follow(page, callback= self.parse)
+            # next_pages = response.css('div.rec_item a::attr(href)').getall()
+            # if next_pages is not None:
+            #     for page in next_pages:
+            #         yield response.follow(page, callback= self.parse)
         else:
             yield None
                

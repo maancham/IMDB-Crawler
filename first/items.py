@@ -13,6 +13,7 @@ class Main_page(scrapy.Item):
     name = scrapy.Field()
     point = scrapy.Field()
     point_volume = scrapy.Field()
+    metascore = scrapy.Field()
     date = scrapy.Field()
     director = scrapy.Field()
     writer = scrapy.Field()
