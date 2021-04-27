@@ -16,10 +16,10 @@ class FirstPipeline(object):
             27017
         )
         db = self.conn['myfilms']
-        self.collection = db['films_tb']
+        self.collection = db['films_extra']
 
     def process_item(self, item, spider):
-        if spider.name in ['films']:
+        if spider.name in ['films_extra']:
             self.collection.insert(dict(item))
             return item
         else:
@@ -33,8 +33,29 @@ class SecondPipeline(object):
             27017
         )
         db = self.conn['myfilms']
-        self.collection = db['rates_tb']
+        self.collection = db['ratings']
 
     def process_item(self, item, spider):
-        self.collection.insert(dict(item))
-        return item
+        if spider.name in ['ratings']:
+            self.collection.insert(dict(item))
+            return item
+        else:
+            return  item
+
+
+class ThirdPipeline(object):
+
+    def __init__(self):
+        self.conn = pymongo.MongoClient(
+            'localhost',
+            27017
+        )
+        db = self.conn['myfilms']
+        self.collection = db['reviews']
+
+    def process_item(self, item, spider):
+        if spider.name in ['reviews']:
+            self.collection.insert(dict(item))
+            return item
+        else:
+            return  item

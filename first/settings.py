@@ -67,7 +67,8 @@ ROBOTSTXT_OBEY = True
 
 ITEM_PIPELINES = {
     'first.pipelines.FirstPipeline': 300,
-    'first.pipelines.SecondPipeline': 301
+    'first.pipelines.SecondPipeline': 301,
+    'first.pipelines.ThirdPipeline':302
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

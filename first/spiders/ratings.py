@@ -1,97 +1,125 @@
 # -*- coding: utf-8 -*-
 import scrapy
+import numpy as np
 from bs4 import BeautifulSoup
-from ..items import Main_page, Rating_page, Review_page
-
+from ..items import Rating_page
+import locale
+locale.setlocale( locale.LC_ALL, 'en_US.UTF-8' )
 
 class RatingsSpider(scrapy.Spider):
     name = 'ratings'
-    allowed_domains = ['imdb.com']
-    with open(r"C:\Users\hoomo\Desktop\bahrak_data\scrapy\first\first\ratings.txt", "rt") as f:
+    with open(r"ratings.txt", "rt") as f:
         start_urls = [url.strip() for url in f.readlines()]
 
+    # start_urls = start_urls[441871:]
+
     def parse(self, response):
-        items = Rating_page() 
-        header = response.css('h3')[0]
-        movie_name = header.css('a::text').extract()
-        chart_ratings = [[0 for x in range(3)] for y in range(10)]
-        detailed_ratings = [[0 for x in range(6)] for y in range(4)]
-        top_us_nonus = [[0 for x in range(3)] for y in range(2)]
+        if not "No Ratings Available" in response.css('div.sectionHeading::text').extract():
+            items = Rating_page()
+            soup = BeautifulSoup(response.body, 'html5lib')
+            containers = response.css('table')
+            full_url_list = response.request.url.split("/")
+            items['movie_id'] = full_url_list[4]
 
-        j = 0
-        for i in range(9,0,-1):
-            chart_ratings[j][0] = i+1
-            j+= 1
-        chart_ratings[9][0] = 1
+            header = response.css('h3')[0]
+            movie_name = header.css('a::text').extract()
+            items['name'] = movie_name[0]
 
-        detailed_ratings[0][0] = '-'
-        detailed_ratings[0][1] = 'All ages'
-        detailed_ratings[0][2] = '<18'
-        detailed_ratings[0][3] = '18-29'
-        detailed_ratings[0][4] = '30-44'
-        detailed_ratings[0][5] = '45+'
-        detailed_ratings[1][0] = 'All:'
-        detailed_ratings[2][0] = 'Males:'
-        detailed_ratings[3][0] = 'Females:'
 
-        top_us_nonus[0][0] = 'Top 1000 Voters'
-        top_us_nonus[0][1] = 'US users'
-        top_us_nonus[0][2] = 'Non-US users'
+            var_names = ['tens', 'nines', 'eights', 'sevens', 'sixes',
+                         'fives', 'fours', 'threes', 'twos', 'ones' ]
+            count_list = []
+            percentage_list = []
+            charts_container = containers[0]
+            charts = charts_container.css('tr')
+            for i in range(len(charts)):
+                if (i == 0):
+                    continue
+                else:
+                    elements = charts[i].css('td')
+                    percentange_container = charts[i].css('div.topAligned::text')
+                    if (len(percentange_container) == 0):
+                        percentage_list.append(0)
+                    else:
+                        value = percentange_container.extract()[0].strip()
+                        value = value[:-1]
+                        percentage_list.append(float(value))
 
-        soup = BeautifulSoup(response.body, 'html5lib')
-        containers = soup.findAll('table')
+                    count_container = elements[len(elements) - 1]
+                    count = count_container.css('div.leftAligned::text').extract_first()
+                    count_list.append(locale.atoi(count))
 
-        charts = containers[0]
-        weights = charts.findAll(
-            'div', attrs={'class': 'topAligned'})
-        volumes = charts.findAll(
-            'div', attrs={'class': 'leftAligned'})
-        volumes = volumes[1:]
-        j = 0
-        for i in range(len(weights)):
-            chart_ratings[j][1] = weights[i].text.strip()
-            chart_ratings[j][2] = volumes[i].text
-            j+= 1
-        
-        demographic = containers[1]
-        noexist_points_indexes = []
-        all_dems_big_cell = demographic.findAll(
-            'div', attrs={'class': 'bigcell'})
-        for i in range(len(all_dems_big_cell)):
-            if (all_dems_big_cell[i].text == '-'):
-                noexist_points_indexes.append(i)
-        all_dems_small_cell = demographic.findAll(
-            'div', attrs={'class': 'smallcell'})
-        for i in range(len(noexist_points_indexes)):
-            all_dems_small_cell.insert(noexist_points_indexes[i], '-')
-        row_number = 1
-        for i in range(len(all_dems_big_cell)):
-            
-            point = all_dems_big_cell[i].text
-            if(all_dems_small_cell[i] == '-'):
-                point_volume = '-'
-            else:
-                point_volume = all_dems_small_cell[i].text.strip()
-            if (row_number == 4):
-                break
-            j = ((i+1)%6 + row_number-1) % 6
-            detailed_ratings[row_number][j] = point + '/' + point_volume
-            if (i == 4) or (i == 9):
-                row_number += 1
+            for i in range(10):
+                count_tag = var_names[i] + '_count'
+                percent_tag = var_names[i] + '_percent'
+                items[count_tag] = count_list[i]
+                items[percent_tag] = percentage_list[i]
 
-        extra_details = containers[2]
-        extra_big_cell = extra_details.findAll(
-            'div', attrs={'class': 'bigcell'})
-        extra_small_cell = extra_details.findAll(
-            'div', attrs={'class': 'smallcell'})
-        for i in range(len(extra_big_cell)):
-            point = extra_big_cell[i].text
-            point_volume = extra_small_cell[i].text.strip()
-            top_us_nonus[1][i] = point + '/' + point_volume
 
-        items['name'] = movie_name[0]
-        items['chart'] = chart_ratings
-        items['detail'] = detailed_ratings
-        items['extra'] = top_us_nonus
 
-        yield items
+
+            demo_container = containers[1]
+            demos = demo_container.css('tr')
+            demos = demos[1:]
+            for j in range(3):
+                all_demos = demos[j]
+                prefix = ''
+                if (j == 1):
+                    prefix = 'male_'
+                elif (j == 2):
+                    prefix = 'female_'
+                first_row_tables = all_demos.css('td.ratingTable')
+                first_row_dict = {0: 'all', 1:'minor', 2:'young', 3:'adult', 4:'senior'}
+                for i in range(len(first_row_tables)):
+                    box = first_row_tables[i]
+                    item_tag = first_row_dict[i]
+                    bigcell_cont = box.css('div.bigcell::text')
+                    smallcell_cont = box.css('div.smallcell')
+                    if (len(smallcell_cont) == 0):
+                        pass
+                        items[prefix + item_tag + '_average'] = np.nan
+                        items[prefix + item_tag + '_count'] = 0
+                    else:
+                        big_value = float(bigcell_cont.extract_first())
+                        small_value = locale.atoi(smallcell_cont.css('a::text').extract_first())
+                        items[prefix + item_tag + '_average'] = big_value
+                        items[prefix + item_tag + '_count'] = small_value
+
+
+
+            extra_container = containers[2]
+            extra_first_row = extra_container.css('tr')[1]
+            value_conts = extra_first_row.css('td')
+            for i in range(3):
+                if (i == 0):
+                    avg_tag = 'top_thousand_average'
+                    cnt_tag = 'top_thousand_count'
+                elif (i == 1):
+                    avg_tag = 'us_users_average'
+                    cnt_tag = 'us_users_count'
+                elif (i == 2):
+                    avg_tag = 'non_us_users_average'
+                    cnt_tag = 'non_us_users_count'
+
+                target_cont = value_conts[i]
+                bigcell_cont = target_cont.css('div.bigcell::text')
+                smallcell_cont = target_cont.css('div.smallcell')
+                if (len(smallcell_cont) == 0):
+                    items[avg_tag] = np.nan
+                    items[cnt_tag] = 0
+                else:
+                    big_value = float(bigcell_cont.extract_first())
+                    small_value = locale.atoi(smallcell_cont.css('a::text').extract_first())
+                    items[avg_tag] = big_value
+                    items[cnt_tag] = small_value
+
+
+
+
+
+
+
+
+
+
+            yield items
